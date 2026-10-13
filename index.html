@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Распределение мест в парламенте</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap">
+<style>
+:root{--bg:#f4f4f1;--card:#fff;--tx:#1c1c1e;--mut:#6c6c72;--bd:#d9d9d4;--ac:#2a5bd7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151517;--card:#222225;--tx:#ececee;--mut:#9b9ba3;--bd:#3a3a40;--ac:#7b9dff}}
+:root[data-theme="dark"]{--bg:#151517;--card:#222225;--tx:#ececee;--mut:#9b9ba3;--bd:#3a3a40;--ac:#7b9dff}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.app{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;padding:16px;max-width:1500px;margin:0 auto}
+@media(max-width:860px){.app{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+h1{font-size:18px;margin:0 0 14px}
+label.f{display:block;margin:12px 0 4px;font-size:13px;color:var(--mut)}
+input[type=text],input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+.seg{display:flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:8px;border:0;background:var(--bg);color:var(--tx);font:inherit;cursor:pointer}
+.seg button.on{background:var(--ac);color:#fff}
+.row{display:grid;grid-template-columns:38px 1fr 76px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.row input[type=color]{width:38px;height:36px;padding:2px;border:1px solid var(--bd);border-radius:8px;background:var(--bg)}
+.row .x{border:0;background:none;color:var(--mut);font-size:20px;cursor:pointer}
+.hd{display:grid;grid-template-columns:38px 1fr 76px 28px;gap:6px;font-size:12px;color:var(--mut);margin:12px 0 4px}
+.chk{display:flex;gap:8px;align-items:center;margin-top:12px}
+.btn{width:100%;margin-top:16px;padding:11px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:600 15px system-ui,sans-serif;cursor:pointer}
+#st{margin:10px 0 0;font-size:13px;color:var(--mut)}
+#st.w{color:#d33}
+canvas{width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--bd);background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/20px 20px}
+#fb{display:none;margin-top:12px;font-size:13px;color:var(--mut)}
+#fb img{width:100%;margin-top:8px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <h1>Распределение мест</h1>
+    <label class="f">Форма рассадки</label>
+    <div class="seg"><button id="sArc" class="on">Полукруг</button><button id="sRect">Прямоугольник</button></div>
+    <label class="f" for="total">Количество кресел</label>
+    <input type="number" id="total" min="1" max="2000" value="450">
+    <label class="f" for="cnt">Количество партий</label>
+    <input type="number" id="cnt" min="1" max="20" value="5">
+    <div class="hd"><span></span><span>Название</span><span>Мест</span><span></span></div>
+    <div id="list"></div>
+    
+    
+    <label class="f" for="font">Шрифт</label>
+    <select id="font"><option value="sys">Системный</option><option>Inter</option><option>Roboto</option><option>PT Sans</option><option>PT Serif</option><option>Montserrat</option><option>Oswald</option><option>Playfair Display</option><option>Roboto Slab</option></select>
+    <label class="f" for="bg">Фон</label>
+    <select id="bg"><option value="white">Белый</option><option value="dark">Тёмный</option><option value="none">Прозрачный</option></select>
+    <label class="chk"><input type="checkbox" id="center" checked> Число кресел в центре (полукруг)</label>
+    <label class="chk"><input type="checkbox" id="legend" checked> Легенда</label>
+    
+    <label class="f">Размер легенды: <b id="lsv">100</b>%</label><input type="range" id="ls" min="50" max="250" value="100" style="width:100%">
+    <label class="f">Размер числа в центре: <b id="csv">100</b>%</label><input type="range" id="cs" min="50" max="150" value="100" style="width:100%">
+    <button class="btn" id="save">Сохранить как PNG</button>
+    <div id="fb">Автоматическое сохранение недоступно. Сохраните картинку вручную (долгое нажатие или правая кнопка мыши):<img id="fbImg" alt=""></div>
+  </div>
+  <div class="card">
+    <canvas id="cv" width="1600" height="900"></canvas>
+    <p id="st"></p>
+  </div>
+</div>
+<script>
+const PAL=['#e4572e','#2e86ab','#f5b700','#4caf50','#8e5ea2','#17bebb','#ff8fab','#7a7a7a','#a0522d','#3949ab'];
+const S={shape:'arc',total:450,parties:[
+  {name:'Партия А',color:PAL[0],seats:160},{name:'Партия Б',color:PAL[1],seats:126},
+  {name:'Партия В',color:PAL[2],seats:84},{name:'Партия Г',color:PAL[3],seats:56},{name:'Партия Д',color:PAL[4],seats:24}]};
+const $=id=>document.getElementById(id);
+const cv=$('cv'),mx=document.createElement('canvas').getContext('2d');
+const SYS='system-ui,"Segoe UI",Roboto,Arial,sans-serif';
+let FONT=SYS;
+$('font').onchange=async e=>{
+  const v=e.target.value;
+  if(v==='sys'){FONT=SYS;draw();return}
+  FONT=`"${v}",system-ui,sans-serif`;
+  try{await Promise.all([document.fonts.load(`400 40px "${v}"`),document.fonts.load(`700 40px "${v}"`)])}catch(_){}
+  draw();
+};
+
+function buildList(){
+  const l=$('list');l.innerHTML='';
+  S.parties.forEach((p,i)=>{
+    const r=document.createElement('div');r.className='row';
+    const c=document.createElement('input');c.type='color';c.value=p.color;
+    c.oninput=()=>{p.color=c.value;draw()};
+    const n=document.createElement('input');n.type='text';n.value=p.name;
+    n.oninput=()=>{p.name=n.value;draw()};
+    const s=document.createElement('input');s.type='number';s.min=0;s.value=p.seats;
+    s.oninput=()=>{p.seats=Math.max(0,parseInt(s.value)||0);draw()};
+    const x=document.createElement('button');x.className='x';x.textContent='×';x.title='Удалить партию';
+    x.onclick=()=>{if(S.parties.length>1){S.parties.splice(i,1);$('cnt').value=S.parties.length;buildList();draw()}};
+    r.append(c,n,s,x);l.append(r);
+  });
+}
+$('cnt').oninput=e=>{
+  const n=Math.min(20,Math.max(1,parseInt(e.target.value)||1));
+  while(S.parties.length<n){const k=S.parties.length;S.parties.push({name:'Партия '+(k+1),color:PAL[k%PAL.length],seats:0})}
+  while(S.parties.length>n)S.parties.pop();
+  buildList();draw();
+};
+$('total').oninput=e=>{S.total=Math.min(2000,Math.max(1,parseInt(e.target.value)||1));draw()};
+['bg','center','legend','ls','cs'].forEach(id=>$(id).oninput=draw);
+$('sArc').onclick=()=>setShape('arc');$('sRect').onclick=()=>setShape('rect');
+function setShape(s){S.shape=s;$('sArc').classList.toggle('on',s==='arc');$('sRect').classList.toggle('on',s==='rect');draw()}
+
+function arcSeats(N,cx,cy,Rout){
+  const R=Math.max(1,Math.round(Math.sqrt(.3065*N)+.5));
+  const r0=R===1?Rout:Rout*.35;
+  const rad=[];for(let i=0;i<R;i++)rad.push(R===1?Rout:r0+(Rout-r0)*i/(R-1));
+  const sum=rad.reduce((a,b)=>a+b,0);
+  const cnt=rad.map(r=>Math.max(1,Math.round(N*r/sum)));
+  let diff=N-cnt.reduce((a,b)=>a+b,0),i=R-1;
+  while(diff!==0){if(diff>0){cnt[i]++;diff--}else if(cnt[i]>1){cnt[i]--;diff++}i=(i-1+R)%R}
+  const seats=[];
+  rad.forEach((r,k)=>{for(let j=0;j<cnt[k];j++){
+    const th=cnt[k]===1?Math.PI/2:Math.PI-Math.PI*j/(cnt[k]-1);
+    seats.push({x:cx+r*Math.cos(th),y:cy-r*Math.sin(th),th,r});
+  }});
+  seats.sort((a,b)=>b.th-a.th||a.r-b.r);
+  const s=Math.min(R>1?(Rout-r0)/(R-1):1e9,Math.PI*sum/N);
+  return {seats,dr:Math.min(48,s*.42),r0};
+}
+
+function draw(){
+  const N=S.total,W=1920,pad=60,bg=$('bg').value,dark=bg==='dark';
+  const tx=dark?'#f2f2f2':'#1b1b1b';
+  const showLeg=$('legend').checked;
+  const ls=$('ls').value/100,cs=$('cs').value/100;
+  $('lsv').textContent=$('ls').value;$('csv').textContent=$('cs').value;
+  // раскраска мест
+  const colors=[];
+  S.parties.forEach(p=>{for(let k=0;k<p.seats&&colors.length<N;k++)colors.push(p.color)});
+  const used=S.parties.reduce((a,p)=>a+p.seats,0),vacant=Math.max(0,N-used);
+  while(colors.length<N)colors.push(null);
+  // легенда
+  const items=S.parties.filter(p=>p.seats>0).map(p=>({t:`${p.name||'Без названия'} — ${p.seats}`,c:p.color}));
+  if(vacant>0)items.push({t:`Свободные места — ${vacant}`,c:null});
+  const rows=[];let cur=[],cw=0;
+  mx.font=`500 ${34*ls}px ${FONT}`;
+  if(showLeg)items.forEach(it=>{
+    it.w=46*ls+mx.measureText(it.t).width+50*ls;
+    if(cw+it.w>W-2*pad&&cur.length){rows.push(cur);cur=[];cw=0}
+    cur.push(it);cw+=it.w;
+  });
+  if(cur.length)rows.push(cur);
+  const legH=rows.length?Math.round(rows.length*54*ls+70):0,top=pad;
+  // геометрия
+  let chartH,seatsPos,dr,cx=W/2,cy,r0=0,Rout=0;
+  if(S.shape==='arc'){
+    Rout=Math.min((W-2*pad)/2-24,1080-top-legH-pad-30);cy=top+Rout;
+    const a=arcSeats(N,cx,cy,Rout);seatsPos=a.seats;dr=a.dr;r0=a.r0;chartH=Rout+30;
+  }else{
+    const cols=Math.ceil(Math.sqrt(N*2)),nr=Math.ceil(N/cols);
+    const cell=Math.min(120,(W-2*pad)/cols,(1080-top-legH-pad)/nr),gw=cell*cols,x0=(W-gw)/2;
+    seatsPos=[];for(let k=0;k<N;k++)seatsPos.push({x:x0+(Math.floor(k/nr)+.5)*cell,y:top+(k%nr+.5)*cell});
+    dr=cell*.4;chartH=nr*cell;
+  }
+  const H=1080,oy=Math.max(0,Math.round((H-(top+chartH+legH+pad))/2));
+  cv.width=W;cv.height=H;
+  const x=cv.getContext('2d');
+  if(bg!=='none'){x.fillStyle=dark?'#17171a':'#ffffff';x.fillRect(0,0,W,H)}
+  x.translate(0,oy);
+  x.textAlign='center';x.textBaseline='alphabetic';
+  
+  seatsPos.forEach((p,k)=>{
+    x.beginPath();x.arc(p.x,p.y,dr,0,Math.PI*2);
+    x.fillStyle=colors[k]||(dark?'#3a3a40':'#dcdcdc');x.fill();
+  });
+  if(S.shape==='arc'&&$('center').checked){
+    const f=r0*.5*cs;x.fillStyle=tx;
+    x.font=`700 ${f}px ${FONT}`;x.fillText(String(N),cx,cy-r0*.12);
+    
+  }
+  // легенда
+  let y=top+chartH+70+36*ls;
+  x.textAlign='left';x.font=`500 ${34*ls}px ${FONT}`;
+  rows.forEach(row=>{
+    const w=row.reduce((a,b)=>a+b.w,0)-50*ls;let lx=(W-w)/2;
+    row.forEach(it=>{
+      x.fillStyle=it.c||(dark?'#3a3a40':'#dcdcdc');
+      x.beginPath();x.arc(lx+17*ls,y-11*ls,17*ls,0,Math.PI*2);x.fill();
+      x.fillStyle=tx;x.fillText(it.t,lx+46*ls,y);lx+=it.w;
+    });
+    y+=54*ls;
+  });
+  // статус
+  const st=$('st');
+  if(used>N){st.className='w';st.textContent=`Сумма мест партий (${used}) больше числа кресел (${N}) — лишние места не показаны.`}
+  else{st.className='';st.textContent=`Занято ${used} из ${N}`+(vacant?`, свободно ${vacant}`:'')+`. Размер картинки: ${W}×${H}.`}
+}
+
+$('save').onclick=async()=>{
+  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  let d=null;
+  try{if(window.claude&&claude.use)d=await claude.use('downloads')}catch(e){}
+  if(d){
+    try{await d.save({filename:'parliament.png',data:blob});return}
+    catch(e){if(e&&e.code==='declined')return}
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='parliament.png';
+  document.body.appendChild(a);a.click();a.remove();
+  $('fbImg').src=cv.toDataURL('image/png');$('fb').style.display='block';
+};
+
+buildList();draw();
+</script>
+</body>
+</html>
